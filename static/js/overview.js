@@ -298,11 +298,12 @@ function showOrgDetails(orgId) {
     // Filtra filiais da organização que ainda estão pendentes, pertencem aos sistemas alvo
     // e fazem parte de uma organização que não tem nada em produção
     const orgBranches = data.filter(item => {
+        const semDataImplantacao = !item.dataImplantacao || item.dataImplantacao.trim() === '';
         const orgNaoEstaEmProducao = !orgsJaEmProducao.has(item.organizacao_codigo);
 
         return (item.organizacao_codigo || '') === orgId &&
-               item.pendente &&
                isTargetSystem(item.sistema) &&
+               semDataImplantacao &&
                orgNaoEstaEmProducao;
     });
 
