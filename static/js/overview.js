@@ -102,33 +102,47 @@ function getDifficulty(percentage) {
     return { label: 'Dificuldade Baixa', class: 'difficulty-low' };
 }
 
+/**
+ * Verifica se o sistema pertence aos sistemas alvo do Painel Informativo.
+ * Sistemas: CLOUD, WEBSITE, WEB SITE, ZAPCRM.
+ */
+function isTargetSystem(sistema) {
+    const s = (sistema || '').toUpperCase();
+    return s.includes('CLOUD') ||
+           s.includes('WEBSITE') ||
+           s.includes('WEB SITE') ||
+           s.includes('ZAPCRM');
+}
+
+/**
+ * Identifica organizações que já possuem pelo menos uma unidade implantada nos sistemas alvo.
+ */
+function getOrgsJaEmProducao(data) {
+    const orgs = new Set();
+    data.forEach(item => {
+        const temData = item.dataImplantacao && item.dataImplantacao.trim() !== '';
+        if (isTargetSystem(item.sistema) && temData && item.organizacao_codigo) {
+            orgs.add(item.organizacao_codigo);
+        }
+    });
+    return orgs;
+}
+
 function renderOverview() {
     const currentContainer = document.getElementById('current-implementations');
     const summaryContainer = document.getElementById('overview-summary');
 
     if (!currentContainer) return;
 
-    // Usamos state.globalData para garantir que clientes sem data (como Motobel) apareçam
-    // independente dos filtros de data/ano do dashboard principal.
-    let data = state.globalData || [];
-
-    // 1. Filtrar para mostrar apenas filiais sem data de implantação
-    // Sistemas permitidos: CLOUD, WEBSITE, WEB SITE e ZAPCRM
-    // Excluir os que já possuem data de implantação
     const baseData = state.globalData || [];
+    const orgsJaEmProducao = getOrgsJaEmProducao(baseData);
 
-    data = baseData.filter(item => {
-        const sistema = (item.sistema || '').toUpperCase();
-        // Critério de sistema: Cloud, Web Site ou ZapCRM
-        const isTargetSystem = sistema.includes('CLOUD') ||
-                               sistema.includes('WEBSITE') ||
-                               sistema.includes('WEB SITE') ||
-                               sistema.includes('ZAPCRM');
-
-        // Filial é pendente se a data de implantação estiver vazia
+    // Filtrar para mostrar apenas filiais sem data de implantação de organizações que NÃO estão em produção
+    const data = baseData.filter(item => {
         const semDataImplantacao = !item.dataImplantacao || item.dataImplantacao.trim() === '';
+        const orgNaoEstaEmProducao = !orgsJaEmProducao.has(item.organizacao_codigo);
 
-        return isTargetSystem && semDataImplantacao;
+        return isTargetSystem(item.sistema) && semDataImplantacao && orgNaoEstaEmProducao;
     });
 
     const inProgress = data.filter(item => {
@@ -279,16 +293,17 @@ function renderOverview() {
 
 function showOrgDetails(orgId) {
     const data = state.globalData || [];
+    const orgsJaEmProducao = getOrgsJaEmProducao(data);
 
-    // Filtra filiais da organização que ainda estão pendentes e pertencem aos sistemas alvo
+    // Filtra filiais da organização que ainda estão pendentes, pertencem aos sistemas alvo
+    // e fazem parte de uma organização que não tem nada em produção
     const orgBranches = data.filter(item => {
-        const sistema = (item.sistema || '').toUpperCase();
-        const isTargetSystem = sistema.includes('CLOUD') ||
-                               sistema.includes('WEBSITE') ||
-                               sistema.includes('WEB SITE') ||
-                               sistema.includes('ZAPCRM');
+        const orgNaoEstaEmProducao = !orgsJaEmProducao.has(item.organizacao_codigo);
 
-        return (item.organizacao_codigo || '') === orgId && item.pendente && isTargetSystem;
+        return (item.organizacao_codigo || '') === orgId &&
+               item.pendente &&
+               isTargetSystem(item.sistema) &&
+               orgNaoEstaEmProducao;
     });
 
     if (orgBranches.length === 0) return;
