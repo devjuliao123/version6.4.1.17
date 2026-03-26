@@ -112,28 +112,23 @@ function renderOverview() {
     // independente dos filtros de data/ano do dashboard principal.
     let data = state.globalData || [];
 
-    // 1. Identificar organizações que já possuem PELO MENOS UMA unidade implantada (em qualquer sistema)
-    // Conforme pedido: se tiver qualquer valor na Coluna J ("Data da Implantação"), a empresa já foi migrada.
+    // 1. Filtrar para mostrar apenas filiais sem data de implantação
+    // Sistemas permitidos: CLOUD, WEBSITE, WEB SITE e ZAPCRM
+    // Excluir os que já possuem data de implantação
     const baseData = state.globalData || [];
-    const orgsJaMigradas = new Set();
 
-    baseData.forEach(item => {
-        const temData = item.dataImplantacao && item.dataImplantacao.trim() !== '';
-        if (item.organizacao_codigo && temData) {
-            orgsJaMigradas.add(item.organizacao_codigo);
-        }
-    });
-
-    // 2. Filtrar para mostrar apenas CLOUD, WEBSITE e ZAPCRM de organizações que são 100% PENDENTES
     data = baseData.filter(item => {
         const sistema = (item.sistema || '').toUpperCase();
-        const isTargetSystem = sistema.includes('CLOUD') || sistema.includes('WEBSITE') || sistema.includes('ZAPCRM');
-        const orgJaMigrada = orgsJaMigradas.has(item.organizacao_codigo);
+        // Critério de sistema: Cloud, Web Site ou ZapCRM
+        const isTargetSystem = sistema.includes('CLOUD') ||
+                               sistema.includes('WEBSITE') ||
+                               sistema.includes('WEB SITE') ||
+                               sistema.includes('ZAPCRM');
 
-        // Filial é pendente se o texto da data de implantação estiver vazio
-        const filialPendente = !item.dataImplantacao || item.dataImplantacao.trim() === '';
+        // Filial é pendente se a data de implantação estiver vazia
+        const semDataImplantacao = !item.dataImplantacao || item.dataImplantacao.trim() === '';
 
-        return isTargetSystem && filialPendente && !orgJaMigrada;
+        return isTargetSystem && semDataImplantacao;
     });
 
     const inProgress = data.filter(item => {
@@ -284,8 +279,17 @@ function renderOverview() {
 
 function showOrgDetails(orgId) {
     const data = state.globalData || [];
-    // Filtra filiais da organização que ainda estão pendentes (sem data de implantação)
-    const orgBranches = data.filter(item => (item.organizacao_codigo || '') === orgId && item.pendente);
+
+    // Filtra filiais da organização que ainda estão pendentes e pertencem aos sistemas alvo
+    const orgBranches = data.filter(item => {
+        const sistema = (item.sistema || '').toUpperCase();
+        const isTargetSystem = sistema.includes('CLOUD') ||
+                               sistema.includes('WEBSITE') ||
+                               sistema.includes('WEB SITE') ||
+                               sistema.includes('ZAPCRM');
+
+        return (item.organizacao_codigo || '') === orgId && item.pendente && isTargetSystem;
+    });
 
     if (orgBranches.length === 0) return;
 
