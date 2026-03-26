@@ -122,12 +122,23 @@ function renderOverview() {
 
     const baseData = state.globalData || [];
 
-    // Filtrar apenas filiais que NÃO possuem data de implantação e pertencem aos sistemas alvo (Cloud, Web Site, ZapCRM).
-    // A filtragem agora é feita por FILIAL, e não mais por organização inteira.
+    // Identificar organizações que já possuem qualquer filial de sistemas alvo implantada.
+    // O pedido é mostrar somente empresas que NÃO possuem NENHUMA data de implantação para os sistemas alvo.
+    const orgsComImplantacao = new Set();
+    baseData.forEach(item => {
+        const dataImplantacao = (item.data_implantacao || item.dataImplantacao || '').trim();
+        if (isTargetSystem(item.sistema) && dataImplantacao !== '') {
+            orgsComImplantacao.add(item.organizacao_codigo);
+        }
+    });
+
+    // Filtrar para mostrar apenas as filiais de organizações que não possuem NENHUMA unidade implantada nos sistemas alvo.
+    // Assim, se uma empresa (como Grupo I9 ou Motobel) já tem alguma unidade implantada, ela não deve aparecer.
     const data = baseData.filter(item => {
         const dataImplantacao = (item.data_implantacao || item.dataImplantacao || '').trim();
         const semDataImplantacao = dataImplantacao === '';
-        return isTargetSystem(item.sistema) && semDataImplantacao;
+        const orgSemNenhumaImplantacao = !orgsComImplantacao.has(item.organizacao_codigo);
+        return isTargetSystem(item.sistema) && semDataImplantacao && orgSemNenhumaImplantacao;
     });
 
     const inProgress = data.filter(item => {
