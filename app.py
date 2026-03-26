@@ -254,6 +254,7 @@ def processar_dados(records):
         'Sistema': 'sistema',
         'Data Venda': 'data_venda',
         'Data implantação': 'data_implantacao',
+        'Data Implantação': 'data_implantacao',
         'Data Previsão': 'data_previsao',
         'Valor Comissão': 'valor_comissao',
         'Modalidade': 'modalidade',
@@ -266,8 +267,18 @@ def processar_dados(records):
         'Total': 'total_geral'
     }
 
-    existing_columns = {k: v for k, v in column_mapping.items() if k in df.columns}
-    df = df.rename(columns=existing_columns)
+    # Normalizar colunas para lidar com variações de maiúsculas/minúsculas e espaços
+    df.columns = [c.strip() for c in df.columns]
+
+    rename_map = {}
+    df_cols_lower = {c.lower(): c for c in df.columns}
+
+    for excel_col, internal_col in column_mapping.items():
+        excel_col_lower = excel_col.lower()
+        if excel_col_lower in df_cols_lower:
+            rename_map[df_cols_lower[excel_col_lower]] = internal_col
+
+    df = df.rename(columns=rename_map)
 
     required_columns = [
         'filial_codigo', 'organizacao_codigo', 'organizacao_descricao',

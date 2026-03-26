@@ -122,11 +122,21 @@ function renderOverview() {
 
     const baseData = state.globalData || [];
 
-    // Filtrar para mostrar TODAS as filiais sem data de implantação para os sistemas alvo,
-    // independente se a organização já tem outras unidades em produção.
+    // Identificar organizações que já possuem qualquer filial de sistemas alvo implantada.
+    // O pedido é mostrar somente empresas que NÃO possuem data de implantação.
+    const orgsComImplantacao = new Set();
+    baseData.forEach(item => {
+        const dataImplantacao = (item.data_implantacao || item.dataImplantacao || '').trim();
+        if (isTargetSystem(item.sistema) && dataImplantacao !== '') {
+            orgsComImplantacao.add(item.organizacao_codigo);
+        }
+    });
+
+    // Filtrar para mostrar apenas filiais de organizações que não tem NENHUMA unidade implantada nos sistemas alvo.
     const data = baseData.filter(item => {
-        const semDataImplantacao = !item.dataImplantacao || item.dataImplantacao.trim() === '';
-        return isTargetSystem(item.sistema) && semDataImplantacao;
+        const semDataImplantacao = (item.data_implantacao || item.dataImplantacao || '').trim() === '';
+        const orgSemNenhumaImplantacao = !orgsComImplantacao.has(item.organizacao_codigo);
+        return isTargetSystem(item.sistema) && semDataImplantacao && orgSemNenhumaImplantacao;
     });
 
     const inProgress = data.filter(item => {
@@ -141,8 +151,8 @@ function renderOverview() {
         const obs = (item.observacoes || '').toUpperCase();
         return !obs.includes('EM PROCESSO');
     }).sort((a, b) => {
-        const dateA = parseDate(a.dataPrevisao) || new Date(2099, 11, 31);
-        const dateB = parseDate(b.dataPrevisao) || new Date(2099, 11, 31);
+        const dateA = parseDate(a.data_previsao || a.dataPrevisao) || new Date(2099, 11, 31);
+        const dateB = parseDate(b.data_previsao || b.dataPrevisao) || new Date(2099, 11, 31);
         return dateA - dateB;
     });
 
@@ -278,9 +288,10 @@ function renderOverview() {
 function showOrgDetails(orgId) {
     const data = state.globalData || [];
 
-    // Filtra filiais da organização que ainda estão pendentes e pertencem aos sistemas alvo
+    // Filtra filiais da organização que ainda estão pendentes e pertencem aos sistemas alvo.
+    // Mantendo a lógica de que se chegou aqui (pelo clique no card), a ORG já foi filtrada em renderOverview.
     const orgBranches = data.filter(item => {
-        const semDataImplantacao = !item.dataImplantacao || item.dataImplantacao.trim() === '';
+        const semDataImplantacao = (item.data_implantacao || item.dataImplantacao || '').trim() === '';
         return (item.organizacao_codigo || '') === orgId &&
                isTargetSystem(item.sistema) &&
                semDataImplantacao;
@@ -337,7 +348,7 @@ function showOrgDetails(orgId) {
                         <div class="modal-filial-info">
                             <span class="modal-filial-name">${escapeHTML(f.filial_descricao)}</span>
                             <div class="modal-filial-meta">
-                                <span class="material-icons" style="font-size: 14px;">event</span> ${f.dataPrevisao || 'Sem Previsão'}
+                                <span class="material-icons" style="font-size: 14px;">event</span> ${f.data_previsao || f.dataPrevisao || 'Sem Previsão'}
                                 <span class="material-icons" style="font-size: 14px; margin-left: 8px;">computer</span> ${f.sistema}
                             </div>
                         </div>
