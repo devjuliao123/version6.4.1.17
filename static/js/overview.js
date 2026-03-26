@@ -122,21 +122,12 @@ function renderOverview() {
 
     const baseData = state.globalData || [];
 
-    // Identificar organizações que já possuem qualquer filial de sistemas alvo implantada.
-    // O pedido é mostrar somente empresas que NÃO possuem data de implantação.
-    const orgsComImplantacao = new Set();
-    baseData.forEach(item => {
-        const dataImplantacao = (item.data_implantacao || item.dataImplantacao || '').trim();
-        if (isTargetSystem(item.sistema) && dataImplantacao !== '') {
-            orgsComImplantacao.add(item.organizacao_codigo);
-        }
-    });
-
-    // Filtrar para mostrar apenas filiais de organizações que não tem NENHUMA unidade implantada nos sistemas alvo.
+    // Filtrar apenas filiais que NÃO possuem data de implantação e pertencem aos sistemas alvo (Cloud, Web Site, ZapCRM).
+    // A filtragem agora é feita por FILIAL, e não mais por organização inteira.
     const data = baseData.filter(item => {
-        const semDataImplantacao = (item.data_implantacao || item.dataImplantacao || '').trim() === '';
-        const orgSemNenhumaImplantacao = !orgsComImplantacao.has(item.organizacao_codigo);
-        return isTargetSystem(item.sistema) && semDataImplantacao && orgSemNenhumaImplantacao;
+        const dataImplantacao = (item.data_implantacao || item.dataImplantacao || '').trim();
+        const semDataImplantacao = dataImplantacao === '';
+        return isTargetSystem(item.sistema) && semDataImplantacao;
     });
 
     const inProgress = data.filter(item => {
@@ -289,9 +280,9 @@ function showOrgDetails(orgId) {
     const data = state.globalData || [];
 
     // Filtra filiais da organização que ainda estão pendentes e pertencem aos sistemas alvo.
-    // Mantendo a lógica de que se chegou aqui (pelo clique no card), a ORG já foi filtrada em renderOverview.
     const orgBranches = data.filter(item => {
-        const semDataImplantacao = (item.data_implantacao || item.dataImplantacao || '').trim() === '';
+        const dataImplantacao = (item.data_implantacao || item.dataImplantacao || '').trim();
+        const semDataImplantacao = dataImplantacao === '';
         return (item.organizacao_codigo || '') === orgId &&
                isTargetSystem(item.sistema) &&
                semDataImplantacao;
