@@ -114,20 +114,6 @@ function isTargetSystem(sistema) {
            s.includes('ZAPCRM');
 }
 
-/**
- * Identifica organizações que já possuem pelo menos uma unidade implantada nos sistemas alvo.
- */
-function getOrgsJaEmProducao(data) {
-    const orgs = new Set();
-    data.forEach(item => {
-        const temData = item.dataImplantacao && item.dataImplantacao.trim() !== '';
-        if (isTargetSystem(item.sistema) && temData && item.organizacao_codigo) {
-            orgs.add(item.organizacao_codigo);
-        }
-    });
-    return orgs;
-}
-
 function renderOverview() {
     const currentContainer = document.getElementById('current-implementations');
     const summaryContainer = document.getElementById('overview-summary');
@@ -135,14 +121,12 @@ function renderOverview() {
     if (!currentContainer) return;
 
     const baseData = state.globalData || [];
-    const orgsJaEmProducao = getOrgsJaEmProducao(baseData);
 
-    // Filtrar para mostrar apenas filiais sem data de implantação de organizações que NÃO estão em produção
+    // Filtrar para mostrar TODAS as filiais sem data de implantação para os sistemas alvo,
+    // independente se a organização já tem outras unidades em produção.
     const data = baseData.filter(item => {
         const semDataImplantacao = !item.dataImplantacao || item.dataImplantacao.trim() === '';
-        const orgNaoEstaEmProducao = !orgsJaEmProducao.has(item.organizacao_codigo);
-
-        return isTargetSystem(item.sistema) && semDataImplantacao && orgNaoEstaEmProducao;
+        return isTargetSystem(item.sistema) && semDataImplantacao;
     });
 
     const inProgress = data.filter(item => {
@@ -293,18 +277,13 @@ function renderOverview() {
 
 function showOrgDetails(orgId) {
     const data = state.globalData || [];
-    const orgsJaEmProducao = getOrgsJaEmProducao(data);
 
-    // Filtra filiais da organização que ainda estão pendentes, pertencem aos sistemas alvo
-    // e fazem parte de uma organização que não tem nada em produção
+    // Filtra filiais da organização que ainda estão pendentes e pertencem aos sistemas alvo
     const orgBranches = data.filter(item => {
         const semDataImplantacao = !item.dataImplantacao || item.dataImplantacao.trim() === '';
-        const orgNaoEstaEmProducao = !orgsJaEmProducao.has(item.organizacao_codigo);
-
         return (item.organizacao_codigo || '') === orgId &&
                isTargetSystem(item.sistema) &&
-               semDataImplantacao &&
-               orgNaoEstaEmProducao;
+               semDataImplantacao;
     });
 
     if (orgBranches.length === 0) return;
