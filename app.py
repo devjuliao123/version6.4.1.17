@@ -185,7 +185,7 @@ async def logout():
 # =============================
 # CONFIGURAÇÃO GOOGLE SHEETS
 # =============================
-SHEET_NAME = "OrganizacoesMigradas"
+SHEET_NAME = "Filiais Implantadas"
 WORKSHEET_NAME = "Principal"
 CREDENTIAL_FILE = "organizacoescloud.json"
 DATA_FILE = "dados/implantacoes.json"
@@ -253,7 +253,7 @@ def processar_dados(records):
         'Marca': 'marca',
         'Sistema': 'sistema',
         'Data Venda': 'data_venda',
-        'Data da Implantação': 'data_implantacao',
+        'Data implantação': 'data_implantacao',
         'Data Previsão': 'data_previsao',
         'Valor Comissão': 'valor_comissao',
         'Modalidade': 'modalidade',
