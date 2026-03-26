@@ -35,6 +35,13 @@ function initEventListeners() {
     const clearFiltersBtn = document.getElementById('clearFiltersBtn');
     if (clearFiltersBtn) clearFiltersBtn.addEventListener('click', clearFilters);
 
+    const refreshDataBtn = document.getElementById('refreshDataBtn');
+    if (refreshDataBtn) {
+        refreshDataBtn.addEventListener('click', () => {
+            loadData(false, true);
+        });
+    }
+
     const loadMoreBtn = document.getElementById('loadMoreBtn');
     if (loadMoreBtn) loadMoreBtn.addEventListener('click', loadMore);
 
