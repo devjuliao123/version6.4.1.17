@@ -102,39 +102,28 @@ function getDifficulty(percentage) {
     return { label: 'Dificuldade Baixa', class: 'difficulty-low' };
 }
 
+/**
+ * Verifica se o sistema pertence aos sistemas alvo do Painel Informativo.
+ * Sistemas: CLOUD, WEBSITE, WEB SITE, ZAPCRM.
+ */
+function isTargetSystem(sistema) {
+    const s = (sistema || '').toUpperCase();
+    return s.includes('CLOUD') ||
+           s.includes('WEBSITE') ||
+           s.includes('WEB SITE') ||
+           s.includes('ZAPCRM');
+}
+
 function renderOverview() {
     const currentContainer = document.getElementById('current-implementations');
     const summaryContainer = document.getElementById('overview-summary');
 
     if (!currentContainer) return;
 
-    // Usamos state.globalData para garantir que clientes sem data (como Motobel) apareçam
-    // independente dos filtros de data/ano do dashboard principal.
-    let data = state.globalData || [];
-
-    // 1. Identificar organizações que já possuem PELO MENOS UMA unidade implantada (em qualquer sistema)
-    // Conforme pedido: se tiver qualquer valor na Coluna J ("Data da Implantação"), a empresa já foi migrada.
-    const baseData = state.globalData || [];
-    const orgsJaMigradas = new Set();
-
-    baseData.forEach(item => {
-        const temData = item.dataImplantacao && item.dataImplantacao.trim() !== '';
-        if (item.organizacao_codigo && temData) {
-            orgsJaMigradas.add(item.organizacao_codigo);
-        }
-    });
-
-    // 2. Filtrar para mostrar apenas CLOUD, WEBSITE e ZAPCRM de organizações que são 100% PENDENTES
-    data = baseData.filter(item => {
-        const sistema = (item.sistema || '').toUpperCase();
-        const isTargetSystem = sistema.includes('CLOUD') || sistema.includes('WEBSITE') || sistema.includes('ZAPCRM');
-        const orgJaMigrada = orgsJaMigradas.has(item.organizacao_codigo);
-
-        // Filial é pendente se o texto da data de implantação estiver vazio
-        const filialPendente = !item.dataImplantacao || item.dataImplantacao.trim() === '';
-
-        return isTargetSystem && filialPendente && !orgJaMigrada;
-    });
+    // state.globalData já está filtrado globalmente em dataLoader.js para conter apenas:
+    // 1. Sistemas: Cloud, Website, ZapCRM
+    // 2. Sem data de implantação (pendentes)
+    const data = state.globalData || [];
 
     const inProgress = data.filter(item => {
         const obs = (item.observacoes || '').toUpperCase();
@@ -148,8 +137,8 @@ function renderOverview() {
         const obs = (item.observacoes || '').toUpperCase();
         return !obs.includes('EM PROCESSO');
     }).sort((a, b) => {
-        const dateA = parseDate(a.dataPrevisao) || new Date(2099, 11, 31);
-        const dateB = parseDate(b.dataPrevisao) || new Date(2099, 11, 31);
+        const dateA = parseDate(a.data_previsao || a.dataPrevisao) || new Date(2099, 11, 31);
+        const dateB = parseDate(b.data_previsao || b.dataPrevisao) || new Date(2099, 11, 31);
         return dateA - dateB;
     });
 
@@ -284,8 +273,10 @@ function renderOverview() {
 
 function showOrgDetails(orgId) {
     const data = state.globalData || [];
-    // Filtra filiais da organização que ainda estão pendentes (sem data de implantação)
-    const orgBranches = data.filter(item => (item.organizacao_codigo || '') === orgId && item.pendente);
+
+    // Filtra apenas as filiais daquela organização específica.
+    // O state.globalData já está filtrado globalmente.
+    const orgBranches = data.filter(item => (item.organizacao_codigo || '') === orgId);
 
     if (orgBranches.length === 0) return;
 
@@ -338,7 +329,7 @@ function showOrgDetails(orgId) {
                         <div class="modal-filial-info">
                             <span class="modal-filial-name">${escapeHTML(f.filial_descricao)}</span>
                             <div class="modal-filial-meta">
-                                <span class="material-icons" style="font-size: 14px;">event</span> ${f.dataPrevisao || 'Sem Previsão'}
+                                <span class="material-icons" style="font-size: 14px;">event</span> ${f.data_previsao || f.dataPrevisao || 'Sem Previsão'}
                                 <span class="material-icons" style="font-size: 14px; margin-left: 8px;">computer</span> ${f.sistema}
                             </div>
                         </div>

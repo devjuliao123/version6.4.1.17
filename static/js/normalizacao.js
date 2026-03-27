@@ -7,10 +7,11 @@ function normalizarSistemas(sistemasStr) {
     const sistemaMap = {
         'CLOUD': 'CLOUD',
         'WEBSITE': 'WEBSITE',
+        'WEB SITE': 'WEBSITE',
+        'ZAPCRM': 'ZAPCRM',
         'FISCO': 'FISCO',
         'CONTÁBIL': 'CONTÁBIL',
         'FISCAL': 'FISCAL',
-        'ZAPCRM': 'ZAPCRM',
         'WEBPAV': 'WEBPAV',
         'FOLHA': 'FOLHA',
         'ADICION': 'ADICION'
