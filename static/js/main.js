@@ -122,8 +122,9 @@ function init() {
 
     loadData(false, false).then(() => {
         const anoFiltro = document.getElementById('anoFiltro');
-        if (anoFiltro && !anoFiltro.value) {
-            anoFiltro.value = CONFIG.ANO_PADRAO;
+        // Removido o preenchimento automático do ano padrão para mostrar TODOS os registros pendentes, conforme solicitado.
+        if (anoFiltro) {
+            anoFiltro.value = '';
             setTimeout(() => { if (typeof applyFilters === 'function') applyFilters(); }, 100);
         }
         initEventListeners();

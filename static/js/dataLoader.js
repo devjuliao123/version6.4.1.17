@@ -33,16 +33,31 @@ async function loadData(isAutoRefresh = false, forceRefresh = false) {
             throw new Error('Formato de dados inválido');
         }
 
-        // Filtrar dados brutos: manter apenas pendentes dos sistemas solicitados
+        // Filtrar dados brutos: manter apenas ORGs que NÃO possuem nenhuma unidade implantada
+        // nos sistemas solicitados (Cloud, Website, ZapCRM).
         const targetSystems = ['CLOUD', 'WEB SITE', 'WEBSITE', 'ZAPCRM'];
+
+        // 1. Identificar ORGs que já possuem qualquer unidade implantada nos sistemas alvo
+        const orgsComImplantacao = new Set();
+        data.dados.forEach(item => {
+            const sistema = (item.sistema || '').toUpperCase();
+            const dataImplantacao = (item.data_implantacao || '').trim();
+            const isTarget = targetSystems.some(t => sistema.includes(t));
+            if (isTarget && dataImplantacao !== '') {
+                orgsComImplantacao.add(item.organizacao_codigo);
+            }
+        });
+
+        // 2. Filtrar para manter apenas pendentes de ORGs que não tem nada implantado ainda
         const pendingRecords = data.dados.filter(item => {
             const sistema = (item.sistema || '').toUpperCase();
             const dataImplantacao = (item.data_implantacao || '').trim();
 
             const isTarget = targetSystems.some(t => sistema.includes(t));
             const isPending = dataImplantacao === '';
+            const orgLivre = !orgsComImplantacao.has(item.organizacao_codigo);
 
-            return isTarget && isPending;
+            return isTarget && isPending && orgLivre;
         });
 
         // Processar dados
