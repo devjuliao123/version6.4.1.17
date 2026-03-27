@@ -120,26 +120,10 @@ function renderOverview() {
 
     if (!currentContainer) return;
 
-    const baseData = state.globalData || [];
-
-    // Identificar organizações que já possuem qualquer filial de sistemas alvo implantada.
-    // O pedido é mostrar somente empresas que NÃO possuem NENHUMA data de implantação para os sistemas alvo.
-    const orgsComImplantacao = new Set();
-    baseData.forEach(item => {
-        const dataImplantacao = (item.data_implantacao || item.dataImplantacao || '').trim();
-        if (isTargetSystem(item.sistema) && dataImplantacao !== '') {
-            orgsComImplantacao.add(item.organizacao_codigo);
-        }
-    });
-
-    // Filtrar para mostrar apenas as filiais de organizações que não possuem NENHUMA unidade implantada nos sistemas alvo.
-    // Assim, se uma empresa (como Grupo I9 ou Motobel) já tem alguma unidade implantada, ela não deve aparecer.
-    const data = baseData.filter(item => {
-        const dataImplantacao = (item.data_implantacao || item.dataImplantacao || '').trim();
-        const semDataImplantacao = dataImplantacao === '';
-        const orgSemNenhumaImplantacao = !orgsComImplantacao.has(item.organizacao_codigo);
-        return isTargetSystem(item.sistema) && semDataImplantacao && orgSemNenhumaImplantacao;
-    });
+    // state.globalData já está filtrado globalmente em dataLoader.js para conter apenas:
+    // 1. Sistemas: Cloud, Website, ZapCRM
+    // 2. Sem data de implantação (pendentes)
+    const data = state.globalData || [];
 
     const inProgress = data.filter(item => {
         const obs = (item.observacoes || '').toUpperCase();
@@ -290,14 +274,9 @@ function renderOverview() {
 function showOrgDetails(orgId) {
     const data = state.globalData || [];
 
-    // Filtra filiais da organização que ainda estão pendentes e pertencem aos sistemas alvo.
-    const orgBranches = data.filter(item => {
-        const dataImplantacao = (item.data_implantacao || item.dataImplantacao || '').trim();
-        const semDataImplantacao = dataImplantacao === '';
-        return (item.organizacao_codigo || '') === orgId &&
-               isTargetSystem(item.sistema) &&
-               semDataImplantacao;
-    });
+    // Filtra apenas as filiais daquela organização específica.
+    // O state.globalData já está filtrado globalmente.
+    const orgBranches = data.filter(item => (item.organizacao_codigo || '') === orgId);
 
     if (orgBranches.length === 0) return;
 

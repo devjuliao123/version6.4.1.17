@@ -33,8 +33,20 @@ async function loadData(isAutoRefresh = false, forceRefresh = false) {
             throw new Error('Formato de dados inválido');
         }
 
+        // Filtrar dados brutos: manter apenas pendentes dos sistemas solicitados
+        const targetSystems = ['CLOUD', 'WEB SITE', 'WEBSITE', 'ZAPCRM'];
+        const pendingRecords = data.dados.filter(item => {
+            const sistema = (item.sistema || '').toUpperCase();
+            const dataImplantacao = (item.data_implantacao || '').trim();
+
+            const isTarget = targetSystems.some(t => sistema.includes(t));
+            const isPending = dataImplantacao === '';
+
+            return isTarget && isPending;
+        });
+
         // Processar dados
-        state.globalData = data.dados.map(item => {
+        state.globalData = pendingRecords.map(item => {
             const dataVenda = parseDate(item.data_venda);
             const dataImplantacao = parseDate(item.data_implantacao);
             const dataPrevisao = parseDate(item.data_previsao);
